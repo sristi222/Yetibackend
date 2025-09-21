@@ -4,23 +4,32 @@ const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
 
+// ---------------- Import Routes ----------------
 const adminRoutes = require("./routes/authRoutes");
 const slideRoutes = require("./routes/slideRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const formRoutes = require("./routes/formRoutes");
+const popupRoutes = require("./routes/popupRoutes");
+const galleryRoutes = require("./routes/galleryRoutes");
+const marqueeRoutes = require("./routes/marqueeRoutes"); // New Marquee CRUD
+
+// ---------------- Middleware ----------------
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
 // ---------------- Middleware ----------------
-app.use(cors()); // Allow cross-origin requests
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+// Enable CORS for frontend
+app.use(cors());
 
-// ---------------- Serve Uploads ----------------
-// Uploaded files (PDFs, images) accessible publicly
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Parse JSON and URL-encoded bodies
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files statically
+const uploadsPath = path.join(__dirname, "uploads");
+app.use("/uploads", express.static(uploadsPath));
 
 // ---------------- Routes ----------------
 app.use("/api/admin", adminRoutes);
@@ -28,10 +37,15 @@ app.use("/api/slides", slideRoutes);
 app.use("/api/faqs", faqRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/forms", formRoutes);
+app.use("/api/popup", popupRoutes);
+app.use("/api/gallery", galleryRoutes);
+
+// Marquee CRUD Routes
+app.use("/api/marquee", marqueeRoutes);
 
 // ---------------- Default Route ----------------
 app.get("/", (req, res) => {
-  res.send("API is running...");
+  res.send("✅ API is running...");
 });
 
 // ---------------- MongoDB Connection ----------------
@@ -50,12 +64,14 @@ mongoose
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
   });
 
-// ---------------- Global Error Handler ----------------
+// ---------------- Error Handlers ----------------
+// Global error handler middleware
 app.use(errorHandler);
 
-// ---------------- Fallback Error Handler ----------------
+// Fallback error handler for uncaught errors
 app.use((err, req, res, next) => {
   console.error("🔥 Server Error:", err.stack || err);
   res.status(err.status || 500).json({
